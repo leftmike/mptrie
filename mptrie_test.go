@@ -3,7 +3,6 @@ package mptrie_test
 import (
 	"bytes"
 	"fmt"
-	"strings"
 	"testing"
 
 	"github.com/leftmike/mptrie"
@@ -66,14 +65,14 @@ func testMPTrie(t *testing.T, mpt *mptrie.MPTrie, cases []testCase) {
 				t.Errorf("mpt.Put(%v, %v) failed with %s", c.k, c.v, err)
 			}
 
-			fmt.Println(mpt.String())
+			//fmt.Println(mpt.String())
 
 		default:
 			panic(fmt.Sprintf("unexpected test op: %v", c.op))
 		}
 	}
 
-	fmt.Println(strings.Repeat("-", 16))
+	//fmt.Println(strings.Repeat("-", 16))
 }
 
 func TestBasic(t *testing.T) {

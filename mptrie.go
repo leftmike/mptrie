@@ -9,11 +9,13 @@ import (
 
 var (
 	ErrNotFound = errors.New("mptrie: key not found")
+	emptyHash   = keccak256([]byte{0x80})
 )
 
 type MPTrie struct {
 	root       node
 	generation int64
+	hash       []byte
 }
 
 func New() *MPTrie {
@@ -37,6 +39,8 @@ func (mpt *MPTrie) Clone() *MPTrie {
 }
 
 func (mpt *MPTrie) Delete(key []byte) error {
+	mpt.hash = nil
+
 	nk := keyToNibbleKey(key)
 	_ = nk
 	return nil
@@ -79,7 +83,22 @@ func (mpt *MPTrie) Get(key []byte) ([]byte, error) {
 	return nil, ErrNotFound
 }
 
+func (mpt *MPTrie) Hash() []byte {
+	if mpt.hash != nil {
+		return mpt.hash
+	}
+
+	if mpt.root == nil {
+		return emptyHash
+	}
+
+	// mpt.hash = mpt.root.hash()
+	return mpt.hash
+}
+
 func (mpt *MPTrie) Put(key, val []byte) error {
+	mpt.hash = nil
+
 	nk := keyToNibbleKey(key)
 	pn := &mpt.root
 

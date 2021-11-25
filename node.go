@@ -4,10 +4,20 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"golang.org/x/crypto/sha3"
 )
 
 type node interface {
 	toString(w io.Writer, depth int)
+}
+
+func keccak256(data ...[]byte) []byte {
+	h := sha3.NewLegacyKeccak256()
+	for _, d := range data {
+		h.Write(d)
+	}
+	return h.Sum(nil)
 }
 
 type leafNode struct {
