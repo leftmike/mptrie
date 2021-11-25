@@ -21,3 +21,28 @@ func commonPrefix(k1, k2 nibbleKey) int {
 
 	return l
 }
+
+func encodeHexPrefix(nk nibbleKey, tf bool) []byte {
+	var ni int
+	var b byte
+	if tf {
+		b |= 0x20
+	}
+
+	l := len(nk)
+	if l%2 == 1 {
+		b |= 0x10
+		b |= nk[0]
+		ni = 1
+	}
+
+	buf := make([]byte, 0, (l/2)+1)
+	buf = append(buf, b)
+
+	for ni < l {
+		buf = append(buf, (nk[ni]<<4)|nk[ni+1])
+		ni += 2
+	}
+
+	return buf
+}

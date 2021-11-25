@@ -34,3 +34,29 @@ func TestCommonPrefix(t *testing.T) {
 		}
 	}
 }
+
+func TestEncodeHexPrefix(t *testing.T) {
+	cases := []struct {
+		nk  nibbleKey
+		tf  bool
+		buf []byte
+	}{
+		{nk: []byte{0x01}, tf: true, buf: []byte{0x31}},
+		{nk: []byte{0x01}, tf: false, buf: []byte{0x11}},
+		{nk: []byte{0x01, 0x02}, tf: true, buf: []byte{0x20, 0x12}},
+		{nk: []byte{0x01, 0x02}, tf: false, buf: []byte{0x00, 0x12}},
+		{nk: []byte{0x0A, 0x0B, 0x0C}, tf: true, buf: []byte{0x3A, 0xBC}},
+		{nk: []byte{0x0A, 0x0B, 0x0C}, tf: false, buf: []byte{0x1A, 0xBC}},
+		{nk: []byte{0x0A, 0x0B, 0x0C, 0x0D}, tf: true, buf: []byte{0x20, 0xAB, 0xCD}},
+		{nk: []byte{0x0A, 0x0B, 0x0C, 0x0D}, tf: false, buf: []byte{0x00, 0xAB, 0xCD}},
+		{nk: []byte{0x01, 0x02, 0x03, 0x04, 0x05}, tf: true, buf: []byte{0x31, 0x23, 0x45}},
+		{nk: []byte{0x01, 0x02, 0x03, 0x04, 0x05}, tf: false, buf: []byte{0x11, 0x23, 0x45}},
+	}
+
+	for _, c := range cases {
+		buf := encodeHexPrefix(c.nk, c.tf)
+		if !bytes.Equal(buf, c.buf) {
+			t.Errorf("encodeHexPrefix(%v %v): got %v, want %v", c.nk, c.tf, buf, c.buf)
+		}
+	}
+}
