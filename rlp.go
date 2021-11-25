@@ -1,19 +1,19 @@
 package mptrie
 
-func encodeBytes(buf []byte, b []byte) []byte {
-	if len(b) == 1 && b[0] < 128 {
-		return append(buf, b[0])
-	} else if len(b) < 56 {
-		buf = append(buf, byte(128+len(b)))
-		return append(buf, b...)
+func encodeBytes(buf []byte, bs []byte) []byte {
+	if len(bs) == 1 && bs[0] < 128 {
+		return append(buf, bs[0])
+	} else if len(bs) < 56 {
+		buf = append(buf, byte(128+len(bs)))
+		return append(buf, bs...)
 	}
 
 	li := len(buf)
 	buf = append(buf, 0)
 	var l int
-	l, buf = encodeUint(buf, uint64(len(b)))
+	l, buf = encodeUint(buf, uint64(len(bs)))
 	buf[li] = byte(183 + l)
-	return append(buf, b...)
+	return append(buf, bs...)
 }
 
 func encodeUint(buf []byte, u uint64) (int, []byte) {
@@ -64,6 +64,29 @@ func encodeUint(buf []byte, u uint64) (int, []byte) {
 	return 8, append(buf, byte(u))
 }
 
-func encodeSequence(buf []byte, s ...[]byte) []byte {
-	return nil
+func encodeTuple(buf []byte, ts ...[]byte) []byte {
+	ets := make([][]byte, len(ts))
+	for ti, bs := range ts {
+		ets[ti] = encodeBytes(nil, bs)
+	}
+
+	var tl uint64
+	for _, bs := range ets {
+		tl += uint64(len(bs))
+	}
+
+	if tl < 56 {
+		buf = append(buf, byte(192+tl))
+	} else {
+		li := len(buf)
+		buf = append(buf, 0)
+		var l int
+		l, buf = encodeUint(buf, tl)
+		buf[li] = byte(247 + l)
+	}
+
+	for _, bs := range ets {
+		buf = append(buf, bs...)
+	}
+	return buf
 }
