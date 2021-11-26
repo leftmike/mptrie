@@ -10,7 +10,7 @@ import (
 var (
 	ErrNotFound = errors.New("mptrie: key not found")
 	emptyBytes  = encodeBytes(nil, nil)
-	emptyHash   = Keccak256(emptyBytes)
+	emptyHash   = keccak256(emptyBytes)
 )
 
 type MPTrie struct {

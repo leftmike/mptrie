@@ -14,19 +14,12 @@ type node interface {
 	toString(w io.Writer, depth int)
 }
 
-// XXX: change to keccak256; add internal test for it
-func Keccak256(data ...[]byte) []byte {
+func keccak256(data ...[]byte) []byte {
 	h := sha3.NewLegacyKeccak256()
 	for _, d := range data {
 		h.Write(d)
 	}
-	// XXX
-	//return h.Sum(nil)
-
-	r := h.(io.Reader)
-	buf := make([]byte, 32)
-	r.Read(buf)
-	return buf
+	return h.Sum(nil)
 }
 
 type leafNode struct {
@@ -44,12 +37,12 @@ func (leaf *leafNode) hash(rf bool) []byte {
 	// XXX: test for len(encodeHexPrefix) > 32 and/or len(leaf.value) > 32
 	buf := leaf.encode()
 	if rf {
-		return Keccak256(buf)
+		return keccak256(buf)
 	}
 	if len(buf) < 32 {
 		return buf
 	}
-	return encodeBytes(nil, Keccak256(buf))
+	return encodeBytes(nil, keccak256(buf))
 }
 
 func (leaf *leafNode) toString(w io.Writer, depth int) {
@@ -57,7 +50,7 @@ func (leaf *leafNode) toString(w io.Writer, depth int) {
 	fmt.Fprintf(w, "%v = %v\n", leaf.suffixKey, leaf.value)
 }
 
-func (mpt *MPTrie) newLeafNode(sk nibbleKey, val []byte) *leafNode { // XXX: maybe return node?
+func (mpt *MPTrie) newLeafNode(sk nibbleKey, val []byte) node {
 	return &leafNode{
 		suffixKey:  sk,
 		value:      val,
@@ -81,12 +74,12 @@ func (extension *extensionNode) hash(rf bool) []byte {
 	buf := encodeTuple(nil, encodeBytes(nil, encodeHexPrefix(extension.subKey, false)),
 		extension.child.hash(false))
 	if rf {
-		return Keccak256(buf)
+		return keccak256(buf)
 	}
 	if len(buf) < 32 {
 		return buf
 	}
-	return encodeBytes(nil, Keccak256(buf))
+	return encodeBytes(nil, keccak256(buf))
 }
 
 func (extension *extensionNode) toString(w io.Writer, depth int) {
@@ -144,12 +137,12 @@ func (branch *branchNode) hash(rf bool) []byte {
 
 	buf := encodeTuple(nil, tuple...)
 	if rf {
-		return Keccak256(buf)
+		return keccak256(buf)
 	}
 	if len(buf) < 32 {
 		return buf
 	}
-	return encodeBytes(nil, Keccak256(buf))
+	return encodeBytes(nil, keccak256(buf))
 }
 
 func (branch *branchNode) toString(w io.Writer, depth int) {
