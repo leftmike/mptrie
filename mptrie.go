@@ -9,7 +9,8 @@ import (
 
 var (
 	ErrNotFound = errors.New("mptrie: key not found")
-	emptyHash   = keccak256([]byte{0x80})
+	emptyBytes  = encodeBytes(nil, nil)
+	emptyHash   = Keccak256(emptyBytes)
 )
 
 type MPTrie struct {
@@ -92,7 +93,7 @@ func (mpt *MPTrie) Hash() []byte {
 		return emptyHash
 	}
 
-	// mpt.hash = mpt.root.hash()
+	mpt.hash = mpt.root.hash(true)
 	return mpt.hash
 }
 
@@ -180,4 +181,11 @@ func (mpt *MPTrie) Put(key, val []byte) error {
 
 	*pn = mpt.newLeafNode(nk, val)
 	return nil
+}
+
+func (mpt *MPTrie) Encode() []byte {
+	if mpt.root == nil {
+		return nil
+	}
+	return mpt.root.encode()
 }

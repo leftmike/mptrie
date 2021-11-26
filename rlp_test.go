@@ -152,12 +152,17 @@ func TestEncodeTuple(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		buf := encodeTuple(nil, c.ts...)
+		ets := make([][]byte, len(c.ts))
+		for ti, bs := range c.ts {
+			ets[ti] = encodeBytes(nil, bs)
+		}
+
+		buf := encodeTuple(nil, ets...)
 		if !bytes.Equal(buf, c.buf) {
 			t.Errorf("encodeTuple(%v): got %v, want %v", c.ts, buf, c.buf)
 		}
 
-		buf = encodeTuple([]byte{0xAA, 0xBB, 0xCC, 0xDD, 0xEE}, c.ts...)
+		buf = encodeTuple([]byte{0xAA, 0xBB, 0xCC, 0xDD, 0xEE}, ets...)
 		want := append([]byte{0xAA, 0xBB, 0xCC, 0xDD, 0xEE}, c.buf...)
 		if !bytes.Equal(want, buf) {
 			t.Errorf("encodeTuple(%v): got %v, want %v", c.ts, buf, want)

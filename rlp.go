@@ -65,13 +65,8 @@ func encodeUint(buf []byte, u uint64) (int, []byte) {
 }
 
 func encodeTuple(buf []byte, ts ...[]byte) []byte {
-	ets := make([][]byte, len(ts))
-	for ti, bs := range ts {
-		ets[ti] = encodeBytes(nil, bs)
-	}
-
 	var tl uint64
-	for _, bs := range ets {
+	for _, bs := range ts {
 		tl += uint64(len(bs))
 	}
 
@@ -85,7 +80,7 @@ func encodeTuple(buf []byte, ts ...[]byte) []byte {
 		buf[li] = byte(247 + l)
 	}
 
-	for _, bs := range ets {
+	for _, bs := range ts {
 		buf = append(buf, bs...)
 	}
 	return buf
