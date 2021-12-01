@@ -9,7 +9,7 @@ import (
 )
 
 type node interface {
-	encode() []byte
+	encode() []byte // XXX: needed?
 	hash(rf bool) []byte
 	toString(w io.Writer, depth int)
 }
@@ -34,7 +34,6 @@ func (leaf *leafNode) encode() []byte {
 }
 
 func (leaf *leafNode) hash(rf bool) []byte {
-	// XXX: test for len(encodeHexPrefix) > 32 and/or len(leaf.value) > 32
 	buf := leaf.encode()
 	if rf {
 		return keccak256(buf)
@@ -60,7 +59,7 @@ func (mpt *MPTrie) newLeafNode(sk nibbleKey, val []byte) node {
 
 type extensionNode struct {
 	subKey     nibbleKey
-	child      node
+	child      node // XXX: branch *branchNode // Child will always be a branch node.
 	generation int64
 }
 
@@ -70,7 +69,10 @@ func (extension *extensionNode) encode() []byte {
 }
 
 func (extension *extensionNode) hash(rf bool) []byte {
-	// XXX: test for len(encodeHexPrefix) > 32 and/or len(child) > 32
+	if _, ok := extension.child.(*branchNode); !ok {
+		panic(fmt.Sprintf("extension.child must be a branch node: %#v", extension.child))
+	}
+
 	buf := encodeTuple(nil, encodeBytes(nil, encodeHexPrefix(extension.subKey, false)),
 		extension.child.hash(false))
 	if rf {
@@ -100,6 +102,30 @@ type branchNode struct {
 	children   [16]node
 	value      []byte
 	generation int64
+}
+
+func (branch *branchNode) noChildren() bool {
+	for _, n := range branch.children {
+		if n != nil {
+			return false
+		}
+	}
+	return true
+}
+
+func (branch *branchNode) onlyChild() (nibbleKey, node) {
+	var child node
+	var ck byte
+	for nk, n := range branch.children {
+		if n != nil {
+			if child != nil {
+				return nil, nil
+			}
+			child = n
+			ck = byte(nk)
+		}
+	}
+	return []byte{ck}, child
 }
 
 func (branch *branchNode) encode() []byte {

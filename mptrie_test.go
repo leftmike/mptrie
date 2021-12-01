@@ -24,14 +24,15 @@ func TestClone(t *testing.T) {
 type testOp int
 
 const (
-	testGet testOp = iota
+	testDelete testOp = iota
+	testGet
 	testPut
 )
 
 type testCase struct {
-	op             testOp
-	k, v           []byte
-	fail, notFound bool
+	op       testOp
+	k, v     []byte
+	notFound bool
 }
 
 func testMPTrie(t *testing.T, mpt *mptrie.MPTrie, cases []testCase) {
@@ -39,15 +40,23 @@ func testMPTrie(t *testing.T, mpt *mptrie.MPTrie, cases []testCase) {
 
 	for _, c := range cases {
 		switch c.op {
+		case testDelete:
+			err := mpt.Delete(c.k)
+			if c.notFound {
+				if err != mptrie.ErrNotFound {
+					t.Errorf("mpt.Delete(%v) returned %v, expected not found", c.k, err)
+				}
+			} else if err != nil {
+				t.Errorf("mpt.Delete(%v) failed with %s", c.k, err)
+			}
+
+			//fmt.Println(mpt.String())
+
 		case testGet:
 			v, err := mpt.Get(c.k)
 			if c.notFound {
 				if err != mptrie.ErrNotFound {
-					t.Errorf("mpt.Get(%v) returned %s, expected not found", c.k, err)
-				}
-			} else if c.fail {
-				if err == nil {
-					t.Errorf("mpt.Get(%v) did not fail", c.k)
+					t.Errorf("mpt.Get(%v) returned %v, expected not found", c.k, err)
 				}
 			} else if err != nil {
 				t.Errorf("mpt.Get(%v) failed with %s", c.k, err)
@@ -57,11 +66,7 @@ func testMPTrie(t *testing.T, mpt *mptrie.MPTrie, cases []testCase) {
 
 		case testPut:
 			err := mpt.Put(c.k, c.v)
-			if c.fail {
-				if err == nil {
-					t.Errorf("mpt.Put(%v, %v) did not fail", c.k, c.v)
-				}
-			} else if err != nil {
+			if err != nil {
 				t.Errorf("mpt.Put(%v, %v) failed with %s", c.k, c.v, err)
 			}
 
@@ -225,5 +230,125 @@ func TestBasic(t *testing.T) {
 			{op: testGet, k: key10, v: val10},
 			{op: testGet, k: key11, v: val11},
 			{op: testGet, k: key12, v: val12},
+		})
+
+	testMPTrie(t, mptrie.New(),
+		[]testCase{
+			{op: testPut, k: key1, v: val1},
+			{op: testGet, k: key1, v: val1},
+			{op: testDelete, k: key2, notFound: true},
+			{op: testDelete, k: key1},
+			{op: testGet, k: key1, notFound: true},
+		})
+
+	testMPTrie(t, mptrie.New(),
+		[]testCase{
+			{op: testPut, k: key1, v: val1},
+			{op: testPut, k: key2, v: val2},
+
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key2, v: val2},
+
+			{op: testDelete, k: key3, notFound: true},
+			{op: testDelete, k: key1},
+
+			{op: testGet, k: key1, notFound: true},
+			{op: testGet, k: key2, v: val2},
+		})
+
+	testMPTrie(t, mptrie.New(),
+		[]testCase{
+			{op: testPut, k: key1, v: val1},
+			{op: testPut, k: key2, v: val2},
+			{op: testPut, k: key3, v: val3},
+			{op: testPut, k: key4, v: val4},
+			{op: testPut, k: key5, v: val5},
+			{op: testPut, k: key6, v: val6},
+
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key2, v: val2},
+			{op: testGet, k: key3, v: val3},
+			{op: testGet, k: key4, v: val4},
+			{op: testGet, k: key5, v: val5},
+			{op: testGet, k: key6, v: val6},
+
+			{op: testDelete, k: key6},
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key2, v: val2},
+			{op: testGet, k: key3, v: val3},
+			{op: testGet, k: key4, v: val4},
+			{op: testGet, k: key5, v: val5},
+			{op: testGet, k: key6, notFound: true},
+
+			{op: testDelete, k: key5},
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key2, v: val2},
+			{op: testGet, k: key3, v: val3},
+			{op: testGet, k: key4, v: val4},
+			{op: testGet, k: key5, notFound: true},
+			{op: testGet, k: key6, notFound: true},
+
+			{op: testDelete, k: key2},
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key2, notFound: true},
+			{op: testGet, k: key3, v: val3},
+			{op: testGet, k: key4, v: val4},
+			{op: testGet, k: key5, notFound: true},
+			{op: testGet, k: key6, notFound: true},
+		})
+
+	testMPTrie(t, mptrie.New(),
+		[]testCase{
+			{op: testPut, k: key1, v: val1},
+			{op: testPut, k: key3, v: val3},
+			{op: testPut, k: key4, v: val4},
+
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key3, v: val3},
+			{op: testGet, k: key4, v: val4},
+
+			{op: testDelete, k: key5, notFound: true},
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key3, v: val3},
+			{op: testGet, k: key4, v: val4},
+
+			{op: testDelete, k: key3},
+
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key3, notFound: true},
+			{op: testGet, k: key4, v: val4},
+			{op: testGet, k: key5, notFound: true},
+
+			{op: testDelete, k: key3, notFound: true},
+		})
+
+	testMPTrie(t, mptrie.New(),
+		[]testCase{
+			{op: testDelete, k: key1, notFound: true},
+
+			{op: testPut, k: key1, v: val1},
+			{op: testPut, k: key5, v: val5},
+
+			{op: testGet, k: key1, v: val1},
+			{op: testGet, k: key5, v: val5},
+
+			{op: testDelete, k: key1},
+			{op: testGet, k: key1, notFound: true},
+			{op: testGet, k: key5, v: val5},
+		})
+
+	testMPTrie(t, mptrie.New(),
+		[]testCase{
+			{op: testPut, k: key6, v: val6},
+			{op: testPut, k: key7, v: val7},
+			{op: testPut, k: key8, v: val8},
+
+			{op: testDelete, k: key9, notFound: true},
+			{op: testPut, k: key9, v: val9},
+
+			{op: testGet, k: key6, v: val6},
+			{op: testGet, k: key7, v: val7},
+			{op: testGet, k: key8, v: val8},
+			{op: testGet, k: key9, v: val9},
 		})
 }
