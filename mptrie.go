@@ -96,8 +96,10 @@ func (mpt *MPTrie) deleteExtension(extension *extensionNode, nk nibbleKey) (node
 	if err != nil {
 		return nil, err
 	}
-	if n == nil { // XXX: not possible
-		return nil, nil
+	if n == nil {
+		// An extension must always point to a branch and a branch must contain more
+		// than one key. Hence, deleting _one_ key from an extension must never be nil.
+		panic("extension must always point to multiple keys")
 	} else if child, ok := n.(*extensionNode); ok {
 		extension.subKey = append(extension.subKey, child.subKey...)
 		extension.child = child.child
