@@ -107,12 +107,12 @@ func (mpt *MPTrie) deleteExtension(extension *extensionNode, nk nibbleKey) (node
 	} else if child, ok := n.(*leafNode); ok {
 		child.suffixKey = append(extension.subKey, child.suffixKey...)
 		return child, nil
-	} else if _, ok := n.(*branchNode); !ok {
+	} else if child, ok := n.(*branchNode); ok {
+		extension.child = child
+		return extension, nil
+	} else {
 		panic(fmt.Sprintf("extension.child must be a branch node: %#v", n))
 	}
-
-	extension.child = n
-	return extension, nil
 }
 
 func (mpt *MPTrie) deleteNode(n node, nk nibbleKey) (node, error) {
@@ -214,17 +214,27 @@ func (mpt *MPTrie) Put(key, val []byte) error {
 		} else if extension, ok := (*pn).(*extensionNode); ok {
 			cpl := commonPrefix(nk, extension.subKey)
 			if cpl == len(extension.subKey) {
-				pn = &extension.child
 				nk = nk[cpl:]
+
+				// The child of an extension is _always_ a branch; handle it here.
+				branch := extension.child
+				if len(nk) == 0 {
+					branch.value = val
+					return nil
+				}
+
+				pn = &branch.children[nk[0]]
+				nk = nk[1:]
 			} else {
+				newBranch := mpt.newBranchNode()
 				if cpl > 0 {
 					newExtension := mpt.newExtensionNode(extension.subKey[:cpl])
 					*pn = newExtension
-					pn = &newExtension.child
+					newExtension.child = newBranch
+				} else {
+					*pn = newBranch
 				}
 
-				newBranch := mpt.newBranchNode()
-				*pn = newBranch
 				if len(extension.subKey) == cpl+1 {
 					newBranch.children[extension.subKey[cpl]] = extension.child
 				} else {
@@ -248,16 +258,17 @@ func (mpt *MPTrie) Put(key, val []byte) error {
 			}
 
 			cpl := commonPrefix(nk, leaf.suffixKey)
+			newBranch := mpt.newBranchNode()
 			if cpl > 0 {
 				newExtension := mpt.newExtensionNode(nk[:cpl])
 				*pn = newExtension
-				pn = &newExtension.child
+				newExtension.child = newBranch
 				nk = nk[cpl:]
 				leaf.suffixKey = leaf.suffixKey[cpl:]
+			} else {
+				*pn = newBranch
 			}
 
-			newBranch := mpt.newBranchNode()
-			*pn = newBranch
 			if len(leaf.suffixKey) == 0 {
 				newBranch.value = leaf.value
 			} else {

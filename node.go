@@ -59,7 +59,7 @@ func (mpt *MPTrie) newLeafNode(sk nibbleKey, val []byte) node {
 
 type extensionNode struct {
 	subKey     nibbleKey
-	child      node // XXX: branch *branchNode // Child will always be a branch node.
+	child      *branchNode // Child will always be a branch node.
 	generation int64
 }
 
@@ -69,10 +69,6 @@ func (extension *extensionNode) encode() []byte {
 }
 
 func (extension *extensionNode) hash(rf bool) []byte {
-	if _, ok := extension.child.(*branchNode); !ok {
-		panic(fmt.Sprintf("extension.child must be a branch node: %#v", extension.child))
-	}
-
 	buf := encodeTuple(nil, encodeBytes(nil, encodeHexPrefix(extension.subKey, false)),
 		extension.child.hash(false))
 	if rf {
